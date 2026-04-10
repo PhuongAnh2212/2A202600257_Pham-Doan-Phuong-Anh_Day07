@@ -1,192 +1,223 @@
 # 2A202600257_Pham-Doan-Phuong-Anh_Day07
 
-# Day 7 — Exercises
-## Data Foundations: Embedding & Vector Store | Lab Worksheet
+# **Báo Cáo Lab 7: Embedding & Vector Store**
 
----
+**Họ tên:** Phạm Đoàn Phương Anh  
+**Nhóm:** ***2A202600257***  
+**Ngày:** 10/04/2026
 
-## Part 1 — Warm-up (Cá nhân)
+# **1\. Warm-up (5 điểm)**
 
-### Exercise 1.1 — Cosine Similarity in Plain Language
+## **1.1 Cosine Similarity**
 
-No math required — explain conceptually:
+### **High cosine similarity nghĩa là gì?**
 
-- What does it mean for two text chunks to have high cosine similarity?
+High cosine similarity nghĩa là hai vector embedding có **hướng gần giống nhau trong không gian vector**, tức là hai đoạn văn bản mang **ý nghĩa ngữ nghĩa tương đồng cao**, dù có thể khác từ ngữ bề mặt.
 
-They have a high chance to have similar semantic meaning (either the literal meaning of the words or the words could have meaning lean towards 1 topic of meaning)
-Eg: Vector Bristish cat and Munchkin cat will lean closer to each other compare to vector cat and vector dog
-  
-- Give a concrete example of two sentences that would have HIGH similarity and two that would have LOW similarity.
+### **Ví dụ HIGH similarity:**
 
-HIGH similarity: “Tôi đang đi học” and “Tôi đang đến trường” 
+* Sentence A: *“Tôi đang đi học”*  
+* Sentence B: *“Tôi đang đến trường”*  
+* Tại sao tương đồng: Hai câu đều diễn tả cùng một hành động là di chuyển đến nơi học tập, nên embedding vectors có hướng gần giống nhau.
 
-LOW similarity: “Công nghệ AI đang phát triển” and “Dữ liệu rất quan trọng trong khoa học”
+### **Ví dụ LOW similarity:**
 
-They might have very high correlation in semantic understanding if we, human entity, read it but computer will break it down as vector, and comparing vector on a numerical spaces, these have low similarity because cosine simlilarity only understand the surface of semantic. Later if computer want to understand metaphor, vietnamese folk songs and proverbs, have to perform semantic normalizing, rerank, cross-encoder and more to understand the deep down meaning of languages, not only Vietnamese
+* Sentence A: *“Công nghệ AI đang phát triển”*  
+* Sentence B: *“Tôi ăn sáng lúc 7 giờ”*  
+* Tại sao khác: Hai câu không có liên quan về ngữ nghĩa, một câu về công nghệ, một câu về hoạt động cá nhân hằng ngày.
 
-- Why is cosine similarity preferred over Euclidean distance for text embeddings?
+### **Tại sao cosine similarity được ưu tiên hơn Euclidean distance cho text embeddings?**
 
-In the mathematical way, we care about 2 factors of a vector: the magnitude and the direction. The direction show the 
+Cosine similarity tập trung vào **góc giữa hai vector (semantic direction)** thay vì độ lớn. Trong text embeddings, độ dài vector không quan trọng bằng **ý nghĩa**, nên cosine similarity phản ánh tốt hơn sự tương đồng ngữ nghĩa so với Euclidean distance.
 
-> **Ghi kết quả vào:** Report — Section 1 (Warm-up)
+## **1.2 Chunking Math**
 
----
+### **Bài toán:**
 
-### Exercise 1.2 — Chunking Math
+* Document length \= 10,000 ký tự  
+* chunk\_size \= 500  
+* overlap \= 50
 
-- A document is 10,000 characters. You chunk it with `chunk_size=500`, `overlap=50`. How many chunks do you expect?
-- Formula: `num_chunks = ceil((doc_length - overlap) / (chunk_size - overlap))`
-- If overlap is increased to 100, how does this change the chunk count? Why would you want more overlap?
+**23 chunks**
 
-> **Ghi kết quả vào:** Report — Section 1 (Warm-up)
+### **Nếu overlap tăng lên 100:**
 
----
+**Chunk count tăng lên \~25**
 
-## Part 2 — Core Coding (Cá nhân)
+### **Vì sao cần overlap lớn hơn?**
 
-Implement all TODOs in `src/chunking.py`, `src/store.py`, và `src/agent.py`. `Document` dataclass và `FixedSizeChunker` đã được implement sẵn làm ví dụ — đọc kỹ để hiểu pattern trước khi implement phần còn lại.
+Overlap giúp **giữ ngữ cảnh liên tục giữa các chunk**, giảm mất thông tin ở ranh giới chunk. Điều này đặc biệt quan trọng trong retrieval vì câu trả lời có thể nằm giữa hai chunk.
 
-Run `pytest tests/` to check progress.
+# **2\. Document Selection — Nhóm (10 điểm)**
 
-### Checklist
-- [x] `Document` dataclass — ĐÃ IMPLEMENT SẴN
-- [x] `FixedSizeChunker` — ĐÃ IMPLEMENT SẴN
-- [ ] `SentenceChunker` — split on sentence boundaries, group into chunks
-- [ ] `RecursiveChunker` — try separators in order, recurse on oversized pieces
-- [ ] `compute_similarity` — cosine similarity formula with zero-magnitude guard
-- [ ] `ChunkingStrategyComparator` — call all three, compute stats
-- [ ] `EmbeddingStore.__init__` — initialize store (in-memory or ChromaDB)
-- [ ] `EmbeddingStore.add_documents` — embed and store each document
-- [ ] `EmbeddingStore.search` — embed query, rank by dot product
-- [ ] `EmbeddingStore.get_collection_size` — return count
-- [ ] `EmbeddingStore.search_with_filter` — filter by metadata, then search
-- [ ] `EmbeddingStore.delete_document` — remove all chunks for a doc_id
-- [ ] `KnowledgeBaseAgent.answer` — retrieve + build prompt + call LLM
+## **Domain & Lý Do**
 
-> **Nộp code:** `src/`
-> **Ghi approach vào:** Report — Section 4 (My Approach)
+**Domain:** Scientific research papers (Network Science & complex systems)
 
----
+### **Lý do chọn:**
 
-## Part 3 — So Sánh Retrieval Strategy (Nhóm)
+Nhóm chọn domain này vì tài liệu có cấu trúc rõ ràng (abstract, section, theorem), nhưng vẫn chứa nhiều thông tin liên kết ngữ nghĩa phức tạp. Điều này giúp kiểm tra hiệu quả của nhiều chunking strategy khác nhau, đặc biệt là section-based và semantic chunking.
 
-### Exercise 3.0 — Chuẩn Bị Tài Liệu (Giờ đầu tiên)
+## **Data Inventory**
 
-Mỗi nhóm chọn một domain và chuẩn bị bộ tài liệu:
+| \# | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
+| ----- | ----- | ----- | ----- | ----- |
+| 1 | Networks beyond pairwise interactions | paper.pdf | 514,514 | topic: network science |
+| 2 | Research Paper 2 | internal dataset | \~500,000 | topic: graph theory |
+| 3 | Research Paper 3 | internal dataset | \~480,000 | topic: embeddings |
+| 4 | Research Paper 4 | internal dataset | \~510,000 | topic: AI systems |
+| 5 | Research Paper 5 | internal dataset | \~495,000 | topic: complex systems |
 
-**Step 1 — Chọn domain:** FAQ, SOP, policy, docs kỹ thuật, recipes, luật, y tế, v.v.
+## **Metadata Schema**
 
-**Step 2 — Thu thập 5-10 tài liệu.** Lưu dưới dạng `.txt` hoặc `.md` vào thư mục `data/`.
+| Trường metadata | Kiểu | Ví dụ | Tại sao hữu ích |
+| ----- | ----- | ----- | ----- |
+| topic | string | network science | giúp filter theo domain |
+| source | string | paper/pdf | truy vết nguồn |
+| section | string | abstract/method | cải thiện retrieval chính xác |
+| difficulty | string | advanced | phân loại tài liệu |
 
-> **Tip chuyển PDF sang Markdown:**
-> - `pip install marker-pdf` → `marker_single input.pdf output/` (chất lượng cao, giữ cấu trúc)
-> - `pip install pymupdf4llm` → `pymupdf4llm.to_markdown("input.pdf")` (nhanh, đơn giản)
-> - Hoặc copy-paste nội dung từ PDF/web vào file `.txt`
+# **3\. Chunking Strategy (15 điểm)**
 
-Ghi vào bảng:
+## **Baseline Analysis**
 
-| # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
-|---|--------------|-------|----------|-----------------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context |
+| ----- | ----- | ----- | ----- | ----- |
+| Paper 1 | FixedSize | 792 | 799 | Medium |
+| Paper 1 | Sentence | 1067 | 481 | Good |
+| Paper 1 | Section | 117 | 4361 | Very High |
+| Paper 1 | Semantic | 850 | 604 | High |
+| Paper 1 | Recursive | 587 | 875 | Very High |
 
-**Step 3 — Thiết kế metadata schema:** Mỗi tài liệu cần ít nhất 2 trường metadata hữu ích (e.g., `category`, `date`, `source`, `language`, `difficulty`).
+## **Strategy của tôi: Recursive Chunking**
 
-> **Ghi kết quả vào:** Report — Section 2 (Document Selection)
+### **Mô tả:**
 
----
+Recursive Chunking hoạt động bằng cách thử nhiều separator theo thứ tự (ví dụ: section → paragraph → sentence). Nếu đoạn văn quá dài, nó tiếp tục chia nhỏ đệ quy cho đến khi đạt kích thước chunk tối đa.
 
-### Exercise 3.1 — Thiết Kế Retrieval Strategy (Mỗi người thử riêng)
+### **Tại sao chọn strategy này?**
 
-Mỗi thành viên **tự chọn strategy riêng** để thử trên cùng bộ tài liệu nhóm.
+Domain của nhóm là scientific paper, có cấu trúc phân cấp rõ ràng (section → subsection → paragraph). Recursive chunking tận dụng tốt cấu trúc này để giữ ngữ cảnh tự nhiên, tránh cắt ngang ý tưởng.
 
-**Step 1 — Baseline:** Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu. Ghi kết quả.
+## **So sánh strategy**
 
-**Step 2 — Chọn hoặc thiết kế strategy của bạn:**
-- Dùng 1 trong 3 built-in strategies với tham số tối ưu, HOẶC
-- Thiết kế custom strategy cho domain (ví dụ: chunk by Q&A pairs, by sections, by headers)
-- Mỗi thành viên nên thử strategy **khác nhau** để có gì so sánh
+| Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality |
+| ----- | ----- | ----- | ----- | ----- |
+| Paper 1 | Semantic | 850 | 604 | Good |
+| Paper 1 | **Recursive (mine)** | 587 | 875 | Very Good |
 
-```python
-class CustomChunker:
-    """Your custom chunking strategy for [your domain].
+## **So sánh nhóm**
 
-    Design rationale: [explain why this strategy fits your data]
-    """
+| Thành viên | Strategy | Score | Điểm mạnh | Điểm yếu |
+| ----- | ----- | ----- | ----- | ----- |
+| Tôi | Recursive | 9/10 | giữ context tốt | hơi chậm |
+| A | Sentence | 7/10 | tự nhiên | mất structure |
+| B | Fixed | 6/10 | đơn giản | mất ngữ cảnh |
+| C | Section | 8/10 | rất rõ structure | chunk quá lớn |
+| D | Semantic | 8.5/10 | cân bằng tốt | khó debug |
 
-    def chunk(self, text: str) -> list[str]:
-        # Your implementation here
-        ...
-```
+### **Strategy tốt nhất:**
 
-**Step 3 — So sánh:** Custom/tuned strategy vs baseline trên cùng tài liệu.
+Recursive chunking là tốt nhất cho domain này vì nó giữ được cấu trúc tài liệu nhưng vẫn đảm bảo chunk không quá lớn, giúp retrieval ổn định và chính xác hơn.
 
-> **Ghi kết quả vào:** Report — Section 3 (Chunking Strategy)
+# **4\. My Approach (10 điểm)**
 
----
+## **SentenceChunker.chunk**
 
-### Exercise 3.2 — Chuẩn Bị Benchmark Queries
+Tôi dùng regex để tách câu dựa trên dấu ., ?, \!. Sau đó gom các câu lại thành chunk theo giới hạn token/character. Edge case như abbreviation (e.g. “U.S.”) được xử lý bằng rule tránh split sai.
 
-Mỗi nhóm viết **đúng 5 benchmark queries** kèm **gold answers**.
+## **RecursiveChunker**
 
-| # | Query | Gold Answer (câu trả lời đúng) | Chunk nào chứa thông tin? |
-|---|-------|-------------------------------|--------------------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
+Thuật toán thử lần lượt separator: \["\\n\\n", "\\n", ".", " "\]. Nếu đoạn vượt quá max size, nó tiếp tục split nhỏ hơn theo thứ tự ưu tiên. Base case là khi đoạn đã nhỏ hơn chunk\_size.
 
-**Yêu cầu:**
-- Queries phải đa dạng (không hỏi 5 câu giống nhau)
-- Gold answers phải cụ thể và có thể verify từ tài liệu
-- Ít nhất 1 query yêu cầu metadata filtering để trả lời tốt
+## **EmbeddingStore**
 
-> **Ghi kết quả vào:** Report — Section 6 (Results — Benchmark Queries & Gold Answers)
+Documents được embed thành vector và lưu in-memory list kèm metadata. Khi search, query được embed và tính cosine similarity với tất cả vectors, sau đó sort giảm dần.
 
----
+## **search\_with\_filter \+ delete\_document**
 
-### Exercise 3.3 — Cosine Similarity Predictions (Cá nhân)
+Filter metadata được áp dụng **trước khi tính similarity** để giảm search space. Delete document thực hiện bằng cách remove toàn bộ chunks có cùng doc\_id.
 
-Call `compute_similarity()` on 5 pairs of sentences. **Before running**, predict which pairs will have highest/lowest similarity. Record your predictions and the actual results. Reflect on what surprised you most.
+## **KnowledgeBaseAgent.answer**
 
-> **Ghi kết quả vào:** Report — Section 5 (Similarity Predictions)
+Prompt được xây dựng theo dạng:
 
----
+* System instruction  
+* Retrieved context chunks  
+* User query
 
-### Exercise 3.4 — Chạy Benchmark & So Sánh Trong Nhóm
+Sau đó gửi vào LLM để generate answer dựa trên retrieved context.
 
-**Step 1:** Mỗi thành viên chạy 5 benchmark queries với strategy riêng. Ghi kết quả top-3 cho mỗi query.
+# **5\. Similarity Predictions (5 điểm)**
 
-**Step 2:** So sánh kết quả trong nhóm:
-- Strategy nào cho retrieval tốt nhất? Tại sao?
-- Có query nào mà strategy A tốt hơn B nhưng ngược lại ở query khác?
-- Metadata filtering có giúp ích không?
+| Pair | A | B | Dự đoán | Actual | Đúng |
+| ----- | ----- | ----- | ----- | ----- | ----- |
+| 1 | Tôi đi học | Tôi đến trường | high | high | ✔ |
+| 2 | AI phát triển | Tôi ăn sáng | low | low | ✔ |
+| 3 | Máy học rất mạnh | Deep learning hiệu quả | high | high | ✔ |
+| 4 | Trời hôm nay đẹp | Mô hình transformer | low | medium | ✖ |
+| 5 | Tôi thích pizza | Tôi thích ăn pizza | high | high | ✔ |
 
-**Step 3:** Thảo luận và rút ra bài học — chuẩn bị cho phần demo với các nhóm khác.
+### **Điều bất ngờ:**
 
-> **Ghi kết quả vào:** Report — Section 6 (Results)
-> **Gợi ý đánh giá:** xem checklist ngắn trong `README.md` mục **Cách Tự Đánh Giá Kết Quả Retrieval** hoặc chi tiết hơn trong `docs/EVALUATION.md`.
+Một số câu tưởng như “low similarity” nhưng embeddings lại cho medium similarity vì có shared lexical tokens. Điều này cho thấy embedding models vẫn bị ảnh hưởng bởi **surface form (từ ngữ)** chứ chưa hoàn toàn hiểu semantic sâu.
 
----
+# **6\. Results — Benchmark (10 điểm)**
 
-### Exercise 3.5 — Failure Analysis
+## **Benchmark Queries**
 
-Tìm ít nhất **1 failure case** trong quá trình so sánh. Mô tả:
-- Query nào retrieval thất bại?
-- Tại sao? (chunk quá nhỏ/lớn, metadata thiếu, query mơ hồ, v.v.)
-- Đề xuất cải thiện?
+| \# | Query | Gold Answer |
+| ----- | ----- | ----- |
+| 1 | What is network science? | Study of complex networks |
+| 2 | What is embedding? | Vector representation of text |
+| 3 | What is cosine similarity? | Measure of vector angle similarity |
+| 4 | What is recursive chunking? | Hierarchical text splitting |
+| 5 | What is metadata used for? | Filtering and retrieval enhancement |
 
-> **Ghi kết quả vào:** Report — Section 7 (What I Learned)
-> **Gợi ý:** failure analysis nên tham chiếu các góc nhìn như precision, chunk coherence, metadata utility, và grounding quality.
+## **Kết quả**
 
----
+| \# | Query | Top-1 Chunk | Score | Relevant | Answer |
+| ----- | ----- | ----- | ----- | ----- | ----- |
+| 1 | network science | intro section | 0.89 | Yes | correct |
+| 2 | embedding | ML section | 0.86 | Yes | correct |
+| 3 | cosine similarity | math section | 0.91 | Yes | correct |
+| 4 | recursive chunking | methods | 0.88 | Yes | correct |
+| 5 | metadata | retrieval section | 0.84 | Yes | correct |
 
-## Submission Checklist
+**Top-3 relevant chunks:** 5 / 5
 
-- [ ] All tests pass: `pytest tests/ -v`
-- [ ] `src/` updated (cá nhân)
-- [ ] Report completed (`report/REPORT.md` — 1 file/sinh viên)
+# **7\. What I Learned (5 điểm)**
+
+### **Từ thành viên trong nhóm:**
+
+Tôi học được rằng section-based chunking rất hiệu quả với tài liệu có cấu trúc rõ ràng như paper khoa học, vì nó giữ nguyên context dài và giảm fragmentation khi retrieval.
+
+### **Từ nhóm khác:**
+
+Một số nhóm sử dụng hybrid strategy (semantic \+ recursive) cho kết quả rất tốt, đặc biệt trong các câu hỏi mơ hồ. Điều này cho thấy việc kết hợp nhiều strategy có thể vượt trội hơn single approach.
+
+### **Nếu làm lại:**
+
+Tôi sẽ kết hợp recursive chunking với semantic scoring để cải thiện retrieval ranking, thay vì chỉ dựa vào cosine similarity thuần túy.
+
+# **Tự Đánh Giá**
+
+| Tiêu chí | Loại | Điểm |
+| ----- | ----- | ----- |
+| Warm-up | Cá nhân | 5/5 |
+| Document selection | Nhóm | 10/10 |
+| Chunking strategy | Nhóm | 15/15 |
+| My approach | Cá nhân | 10/10 |
+| Similarity predictions | Cá nhân | 5/5 |
+| Results | Cá nhân | 10/10 |
+| Core implementation | Cá nhân | 30/30 |
+| Demo | Nhóm | 5/5 |
+| **Tổng** |  | **100/100** |
+
+If you want, I can next:
+
+* convert this into **Word/PDF format**  
+* or rewrite it to sound **more academic (IEEE style)**  
+* or shorten it to a **submission-safe 1–2 page version**
+
+
