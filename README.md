@@ -108,13 +108,13 @@ Domain của nhóm là scientific paper, có cấu trúc phân cấp rõ ràng (
 
 ## **So sánh nhóm**
 
-| Thành viên | Strategy | Score | Điểm mạnh | Điểm yếu |
-| ----- | ----- | ----- | ----- | ----- |
-| Tôi | Recursive | 9/10 | giữ context tốt | hơi chậm |
-| A | Sentence | 7/10 | tự nhiên | mất structure |
-| B | Fixed | 6/10 | đơn giản | mất ngữ cảnh |
-| C | Section | 8/10 | rất rõ structure | chunk quá lớn |
-| D | Semantic | 8.5/10 | cân bằng tốt | khó debug |
+| Thành viên | Strategy | Retrieval Score (/10) | Điểm mạnh | Điểm yếu |
+|-----------|----------|----------------------|-----------|----------|
+| Trương Minh Tiền | Sentence-based | 8.5/10 | Giữ nội dung, trả lời tròn câu hỏi khái niệm. | Tạo ra quá nhiều chunk (1067). |
+| Phạm Đoàn Phương Anh | Semantic Chunking | 9.0/10 | Ghép câu đồng nghĩa bằng LLM embeddings. | Tốn tài nguyên RAM và xử lý rất chậm. |
+| Nguyễn Đức Dũng | Section-based | 7.5/10 | Bắt đúng Header lớn. | Chunk quá to dẫn đến độ nhiễu loạn cao. |
+| Nguyễn Đức Trí | Recursive Chunking | 8.0/10 | Cân bằng tuyệt vời giữa logic và tốc độ. | Vẫn thỉnh thoảng cắt vỡ ý tưởng dài. |
+| Huỳnh Thái Bảo | Baseline (Fixed) | 5.0/10 | Siêu nhanh, code đơn giản, chi phí bằng 0. | Tách vỡ câu, vô nghĩa hoàn toàn lúc Retrieve. |
 
 ### **Strategy tốt nhất:**
 
